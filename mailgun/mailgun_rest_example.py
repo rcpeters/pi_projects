@@ -21,7 +21,7 @@ args = parser.parse_args()
 def send_complex_message():
     global args
     return requests.post(
-        args.url,
+        args.url + "/messages",
         auth=("api", args.key),
         files=[("attachment", open("cat.jpg"))],
         data={"from": args.fromEmail,
