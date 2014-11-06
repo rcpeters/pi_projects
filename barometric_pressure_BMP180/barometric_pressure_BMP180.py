@@ -57,7 +57,7 @@ seaPressureInH20 = sensor.read_sealevel_pressure() * 0.0040147421331128
 seaPressureInHg = sensor.read_sealevel_pressure() * 0.0002953337
 altitude = sensor.read_altitude()
 
-print 'Temp = {0:0.2f}C, {0:0.2f}F'.format(temp, tempF)  + ', {0:0.2f}F'.format(tempF)
+print 'Temp = {0:0.2f}C'.format(temp, tempF)  + ', {0:0.2f}F'.format(tempF)
 print 'Pressure = {0:0.2f}Pa'.format(pressure) + ', {0:0.2f}inH20'.format(pressureInH2O)+ ', {0:0.2f}inH2g'.format(pressureInHg)
 print 'Altitude = {0:0.2f}m'.format(altitude)
 print 'Sealevel Pressure = {0:0.2f}Pa'.format(seaPressure) + ', {0:0.2f}inH20'.format(seaPressureInH20) + ', {0:0.2f}inH2g'.format(seaPressureInHg)
