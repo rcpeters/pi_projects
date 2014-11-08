@@ -38,9 +38,12 @@ def init_sheet(name):
 		print 'adding worksheet ' +  name 
 		sprd.add_worksheet(g_worksheet,1,len(col_names))
 	if wrk is None:
+		print "sleeping 5 seconds to give google API a chance to catch up....."
+		time.sleep(5)
+		sprd = login_get_spread()
 		wrk = sprd.worksheet(g_worksheet)
 	print wrk.cell(1, 1).value
-	if wrk.cell(1, 1).value == '':
+	if wrk.cell(1, 1).value != col_names[0]:
 		header_cells = wrk.range('A1:'+ wrk.get_addr_int(1, len(col_names)))
 		for i in range(len(col_names)):
 			header_cells[i].value = col_names[i]
@@ -48,22 +51,27 @@ def init_sheet(name):
 	return wrk
 
 def add_bmp_rh_row(wrk, r_bmp, r_rh):
-	nextRow = wrk.row_count + 1
-	vals = [ getIsoTime() #A
-		, r_bmp.pressure #B
-		, '=B{0} * 0.0040147421331128'.format(nextRow) #C
-		, '=B{0} * 0.0002953337'.format(nextRow) #D
-		, r_bmp.sealevel_pressure #E
-		, '=E{0} * 0.0040147421331128'.format(nextRow) #F
-		, '=E{0} * 0.0002953337'.format(nextRow) #G
-		, r_bmp.altitude #H
-		, '=H{0} * 3.28084'.format(nextRow) #I
-		, r_bmp.temp #J
-		, '=J{0} * 1.8 + 32'.format(nextRow) #K
-		, r_rh[0] #L
-		, r_rh[1] #M
-		, '=M{0} * 1.8 + 32'.format(nextRow)] #N
-	wrk.append_row(vals)
+	rows = wrk.row_count;
+	cols = wrk.col_count;
+	if wrk.cell(rows, 1).value != '':
+		wrk.add_rows(1)
+		rows = rows+1
+	cells = wrk.range('{0}:{1}'.format(wrk.get_addr_int(rows, 1), wrk.get_addr_int(rows, cols)))
+	cells[0].value = getIsoTime() #A
+	cells[1].value = r_bmp.pressure #B
+	cells[2].value = '=B{0} * 0.0040147421331128'.format(rows) #C
+	cells[3].value = '=B{0} * 0.0002953337'.format(rows) #D
+	cells[4].value = r_bmp.sealevel_pressure #E
+	cells[5].value = '=E{0} * 0.0040147421331128'.format(rows) #F
+	cells[6].value = 'E{0} * 0.0002953337'.format(rows) #G
+	cells[7].value = r_bmp.altitude #H
+	cells[8].value = '=H{0} * 3.28084'.format(rows) #I
+	cells[9].value = r_bmp.temp #J
+	cells[10].value = '=J{0} * 1.8 + 32'.format(rows) #K
+	cells[11].value = r_rh[0] #L
+	cells[12].value = r_rh[1] #M
+	cells[13].value = '=M{0} * 1.8 + 32'.format(rows) #N
+	wrk.update_cells(cells)
 
 def add_rh_row(r):
 	global rhWrk
@@ -95,13 +103,12 @@ while True:
 	success = False
 	while success == False:
 		try:
-			sprd = login_get_spread()
-			wrk = sprd.worksheet(g_worksheet)
-			print 'bmp read'
+			print 'read sensors'
 			r_bmp = bmp.getReading()
 			print 'bmp result {0}, {1}, {2}, {3}'.format(r_bmp.temp, r_bmp.altitude, r_bmp.pressure, r_bmp.sealevel_pressure) 
 			r_rh = Adafruit_DHT.read_retry(22, 22)
 			print 'rh result {0}, {1}'.format(r_rh[0], r_rh[1]) 
+			wrk = login_get_spread().worksheet(g_worksheet)
 			add_bmp_rh_row(wrk, r_bmp, r_rh)
 			print 'saved worked'
 			success = True
