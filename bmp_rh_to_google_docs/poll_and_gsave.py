@@ -63,7 +63,7 @@ def add_bmp_rh_row(wrk, r_bmp, r_rh):
 	cells[3].value = '=B{0} * 0.0002953337'.format(rows) #D
 	cells[4].value = r_bmp.sealevel_pressure #E
 	cells[5].value = '=E{0} * 0.0040147421331128'.format(rows) #F
-	cells[6].value = 'E{0} * 0.0002953337'.format(rows) #G
+	cells[6].value = '=E{0} * 0.0002953337'.format(rows) #G
 	cells[7].value = r_bmp.altitude #H
 	cells[8].value = '=H{0} * 3.28084'.format(rows) #I
 	cells[9].value = r_bmp.temp #J
