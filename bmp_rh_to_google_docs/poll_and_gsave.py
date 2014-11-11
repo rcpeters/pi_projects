@@ -6,7 +6,7 @@ import gspread
 import logging
 import time
 
-
+RAW_SENSOR_SHEET_NAME = 'RAW SENSOR DATA'
 
 # parse the config.ini
 parser = SafeConfigParser()
@@ -27,21 +27,20 @@ def getIsoTime():
 
 def init_sheet(name):
 	sprd = login_get_spread()
-	col_names = ['Time ms', 'P Pa', 'P inH2O', 'P inHg'
-		, 'Sea-P Pa', 'Sea-P inH2O', 'Sea-P inHg'
-		, 'Alt M', 'Alt FT', 'Temp C(BMP)', 'Temp F(BMP)'
-                , 'RH ', 'Temp C(RH)', 'Temp F(RH)']
+	col_names = ['Time ms', 'P Pa'
+		, 'Sea-P Pa', 'Alt M', 'Alt FT', 'Temp C(BMP)'
+                , 'RH ', 'Temp C(RH)']
 	wrk = None
 	try:
-		wrk = sprd.worksheet(g_worksheet)
+		wrk = sprd.worksheet(name)
 	except gspread.exceptions.WorksheetNotFound:
 		print 'adding worksheet ' +  name 
-		sprd.add_worksheet(g_worksheet,1,len(col_names))
+		sprd.add_worksheet(name,1,len(col_names))
 	if wrk is None:
 		print "sleeping 5 seconds to give google API a chance to catch up....."
 		time.sleep(5)
 		sprd = login_get_spread()
-		wrk = sprd.worksheet(g_worksheet)
+		wrk = sprd.worksheet(name)
 	print wrk.cell(1, 1).value
 	if wrk.cell(1, 1).value != col_names[0]:
 		header_cells = wrk.range('A1:'+ wrk.get_addr_int(1, len(col_names)))
@@ -50,7 +49,7 @@ def init_sheet(name):
 		wrk.update_cells(header_cells)
 	return wrk
 
-def add_bmp_rh_row(wrk, r_bmp, r_rh):
+def add_raw_sensor_data(wrk, r_bmp, r_rh):
 	rows = wrk.row_count;
 	cols = wrk.col_count;
 	if wrk.cell(rows, 1).value != '':
@@ -59,26 +58,12 @@ def add_bmp_rh_row(wrk, r_bmp, r_rh):
 	cells = wrk.range('{0}:{1}'.format(wrk.get_addr_int(rows, 1), wrk.get_addr_int(rows, cols)))
 	cells[0].value = getIsoTime() #A
 	cells[1].value = r_bmp.pressure #B
-	cells[2].value = '=B{0} * 0.0040147421331128'.format(rows) #C
-	cells[3].value = '=B{0} * 0.0002953337'.format(rows) #D
-	cells[4].value = r_bmp.sealevel_pressure #E
-	cells[5].value = '=E{0} * 0.0040147421331128'.format(rows) #F
-	cells[6].value = '=E{0} * 0.0002953337'.format(rows) #G
-	cells[7].value = r_bmp.altitude #H
-	cells[8].value = '=H{0} * 3.28084'.format(rows) #I
-	cells[9].value = r_bmp.temp #J
-	cells[10].value = '=J{0} * 1.8 + 32'.format(rows) #K
-	cells[11].value = r_rh[0] #L
-	cells[12].value = r_rh[1] #M
-	cells[13].value = '=M{0} * 1.8 + 32'.format(rows) #N
+	cells[2].value = r_bmp.sealevel_pressure #C
+	cells[3].value = r_bmp.altitude #D
+	cells[4].value = r_bmp.temp #E
+	cells[5].value = r_rh[0] #F
+	cells[6].value = r_rh[1] #G
 	wrk.update_cells(cells)
-
-def add_rh_row(r):
-	global rhWrk
-	rh, temp = r
-	nextRow = rhWrk.row_count + 1
-	vals = [getIsoTime(), rh, temp, '=C{0} * 1.8 + 32'.format(nextRow)]
-	rhWrk.append_row(vals)
 
 def log_error_sleep(ex):
 	print "An exception {0} occured. Arguments:\n{1!r}".format(type(ex).__name__, ex.args)
@@ -93,7 +78,7 @@ setup_success = False
 while setup_success == False:
 	try:
 		print 'init sheet'
-		init_sheet(g_worksheet)
+		init_sheet(RAW_SENSOR_SHEET_NAME)
 		setup_success = True
 	except Exception as ex:
 		log_error_sleep(ex)
@@ -108,8 +93,8 @@ while True:
 			print 'bmp result {0}, {1}, {2}, {3}'.format(r_bmp.temp, r_bmp.altitude, r_bmp.pressure, r_bmp.sealevel_pressure) 
 			r_rh = Adafruit_DHT.read_retry(22, 22)
 			print 'rh result {0}, {1}'.format(r_rh[0], r_rh[1]) 
-			wrk = login_get_spread().worksheet(g_worksheet)
-			add_bmp_rh_row(wrk, r_bmp, r_rh)
+			sensorWrk = login_get_spread().worksheet(RAW_SENSOR_SHEET_NAME)
+			add_raw_sensor_data(sensorWrk, r_bmp, r_rh)
 			print 'saved worked'
 			success = True
 			print
